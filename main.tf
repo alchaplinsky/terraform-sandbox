@@ -65,3 +65,32 @@ resource "aws_route" "route" {
   gateway_id     = aws_internet_gateway.public.id
   depends_on     = [aws_route_table.public-route-table]
 }
+
+resource "aws_instance" "load-balancer" {
+  ami = "ami-051dfed8f67f095f5"
+  instance_type = "t2.micro"
+  vpc_security_group_ids = [aws_security_group.instance.id]
+
+  subnet_id = aws_subnet.public-subnet-1.id
+  associate_public_ip_address = true
+
+  user_data = <<-EOF
+  #!/bin/bash
+  echo "Hello World" > index.html
+  nohup busybox httpd -f -p 80 &
+  EOF
+  tags = {
+    Name = "load-balancer"
+  }
+}
+
+resource "aws_security_group" "instance" {
+  name = "instance"
+
+  ingress {
+    from_port = 8080
+    to_port = 8080
+    protocol = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+}
